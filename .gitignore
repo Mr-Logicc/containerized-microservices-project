@@ -1,0 +1,7 @@
+/auth/app
+/orders/app
+/notifications/app
+.env
+.idea/
+.vscode/
+README.md

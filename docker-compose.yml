@@ -1,0 +1,38 @@
+
+
+# Service names below (redis, auth, orders, notifications) double as DNS
+# names on this compose network -- e.g. orders reaches notifications at
+# http://notifications:8080. That's the same pattern Cloud Map gives you on
+# ECS later (e.g. http://notifications.internal:8080), just simulated
+# locally so you can prove the app logic works before adding AWS.
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  auth:
+    build: ./auth
+    ports:
+      - "8081:8080"
+    environment:
+      REDIS_ADDR: redis:6379
+    depends_on:
+      - redis
+
+  orders:
+    build: ./orders
+    ports:
+      - "8082:8080"
+    environment:
+      REDIS_ADDR: redis:6379
+      NOTIFICATIONS_URL: http://notifications:8080
+    depends_on:
+      - redis
+      - notifications
+
+  notifications:
+    build: ./notifications
+    ports:
+      - "8083:8080"
