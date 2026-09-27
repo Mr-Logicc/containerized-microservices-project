@@ -1,0 +1,54 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-auth:
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service-name: auth
+      container-name: auth
+
+  deploy-orders:
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service-name: orders
+      container-name: orders
+
+  deploy-notifications:
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service-name: notifications
+      container-name: notifications
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC (no long-lived keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Inject the real API base URL
+        run: |
+          sed -i "s|__API_BASE_URL__|http://${{ vars.ALB_DNS_NAME }}|g" frontend/index.html
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync frontend/ "s3://${{ vars.FRONTEND_BUCKET_NAME }}" --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"

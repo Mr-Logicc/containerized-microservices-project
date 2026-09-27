@@ -1,0 +1,9 @@
+# Copy this to terraform.tfvars and fill in your own values.
+# terraform.tfvars is gitignored -- never commit real values, though nothing
+# here is actually sensitive except api_key_secret_value, which is fake anyway.
+
+github_repo = "your-github-username/your-repo-name"
+
+# aws_region           = "us-east-1"
+# project_name         = "microdemo"
+# api_key_secret_value = "anything-you-want"

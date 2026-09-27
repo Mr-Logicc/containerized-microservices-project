@@ -1,0 +1,292 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="arch-1" name="Architecture">
+    <mxGraphModel dx="1888" dy="913" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="1180" width="1900" x="-0.5" as="geometry" />
+        </mxCell>
+        <mxCell id="title" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;spacing=4;" value="&lt;b&gt;Containerized Microservices on ECS Fargate&lt;/b&gt;&lt;br&gt;Auth . Orders . Notifications" vertex="1">
+          <mxGeometry height="56" width="760" x="40" y="16" as="geometry" />
+        </mxCell>
+        <mxCell id="enduser" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#232F3D;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.client;" value="End User" vertex="1">
+          <mxGeometry height="55" width="55" x="55" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="developer" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#232F3D;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.client;" value="Developer" vertex="1">
+          <mxGeometry height="55" width="55" x="55" y="789" as="geometry" />
+        </mxCell>
+        <mxCell id="gha" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECECEC;strokeColor=#545B64;dashed=0;verticalAlign=top;align=center;spacingLeft=10;spacingTop=6;fontColor=#232F3E;fontSize=12;fontStyle=1;arcSize=6;" value="&lt;div align=&quot;center&quot;&gt;GitHub Actions&lt;br&gt;CI/CD via OIDC&lt;/div&gt;" vertex="1">
+          <mxGeometry height="55" width="160" x="175" y="859" as="geometry" />
+        </mxCell>
+        <mxCell id="awscloud" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=14;fontStyle=1;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#232F3E;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#232F3E;dashed=0;" value="AWS Cloud  - Region: us-east-1" vertex="1">
+          <mxGeometry height="1040" width="1470" x="397" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ecr" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F78E04;gradientDirection=north;fillColor=#D05C17;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecr;labelPosition=center;" value="Amazon ECR" vertex="1">
+          <mxGeometry height="60" width="60" x="430" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="iam" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#FF5252;gradientDirection=north;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.role;labelPosition=center;" value="IAM Roles&lt;br&gt;execution / task /&lt;br&gt;blue-green / OIDC" vertex="1">
+          <mxGeometry height="60" width="60" x="660" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="igw" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#945DF2;gradientDirection=north;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;labelPosition=center;" value="Internet Gateway" vertex="1">
+          <mxGeometry height="60" width="60" x="1770" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="vpc" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=1;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;strokeColor=#8C4FFF;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#8C4FFF;dashed=0;" value="VPC -- 10.20.0.0/16" vertex="1">
+          <mxGeometry height="840" width="1400" x="432" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="alb" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.application_load_balancer;" value="Application Load Balancer&lt;br&gt;(path-based routing)" vertex="1">
+          <mxGeometry height="60" width="60" x="1090" y="273" as="geometry" />
+        </mxCell>
+        <mxCell id="az1" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_availability_zone;strokeColor=#545B64;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#545B64;dashed=1;" value="Availability Zone: us-east-1a" vertex="1">
+          <mxGeometry height="660" width="640" x="470" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="pub1" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#7AA116;fillColor=#E9F3D2;verticalAlign=top;align=left;spacingLeft=30;fontColor=#248814;dashed=0;" value="Public Subnet -- 10.20.0.0/24" vertex="1">
+          <mxGeometry height="150" width="580" x="500" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="nat" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#945DF2;gradientDirection=north;fillColor=#5A30B5;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;" value="NAT Gateway" vertex="1">
+          <mxGeometry height="55" width="55" x="835" y="472.5" as="geometry" />
+        </mxCell>
+        <mxCell id="priv1" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#00A4A6;fillColor=#E6F6F7;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=0;" value="Private Subnet -- 10.20.10.0/24" vertex="1">
+          <mxGeometry height="420" width="580" x="500" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="ecscluster" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF1E7;strokeColor=#ED7100;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#ED7100;fontSize=12;fontStyle=1;arcSize=6;" value="&lt;span&gt;ECS Cluster - capacity provider: FARGATE&lt;br&gt;Each task: app container + ADOT Collector sidecar&lt;/span&gt;" vertex="1">
+          <mxGeometry height="350" width="530" x="525" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F78E04;gradientDirection=north;fillColor=#D05C17;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecs;" value="auth" vertex="1">
+          <mxGeometry height="55" width="55" x="555" y="756.5" as="geometry" />
+        </mxCell>
+        <mxCell id="orders" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F78E04;gradientDirection=north;fillColor=#D05C17;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecs;" value="orders" vertex="1">
+          <mxGeometry height="55" width="55" x="730" y="754" as="geometry" />
+        </mxCell>
+        <mxCell id="notifications" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F78E04;gradientDirection=north;fillColor=#D05C17;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecs;" value="notifications" vertex="1">
+          <mxGeometry height="55" width="55" x="938" y="754" as="geometry" />
+        </mxCell>
+        <mxCell id="taskrolelabel" parent="1" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#767676;" value="&lt;div align=&quot;justify&quot;&gt;&lt;font style=&quot;font-size: 12px;&quot;&gt;3x ECS Service, each with its own&amp;nbsp;blue + green target group pair&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="67" width="141" x="900" y="901" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#4D72F3;gradientDirection=north;fillColor=#3334B9;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticache;" value="ElastiCache Redis&lt;br&gt;shared session cache" vertex="1">
+          <mxGeometry height="55" width="55" x="731" y="863" as="geometry" />
+        </mxCell>
+        <mxCell id="az2" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_availability_zone;strokeColor=#545B64;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#545B64;dashed=1;" value="Availability Zone: us-east-1b" vertex="1">
+          <mxGeometry height="660" width="640" x="1150" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="pub2" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#7AA116;fillColor=#E9F3D2;verticalAlign=top;align=left;spacingLeft=30;fontColor=#248814;dashed=0;" value="Public Subnet -- 10.20.1.0/24" vertex="1">
+          <mxGeometry height="150" width="580" x="1180" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="priv2" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=13;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#00A4A6;fillColor=#E6F6F7;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=0;" value="Private Subnet -- 10.20.11.0/24" vertex="1">
+          <mxGeometry height="420" width="580" x="1180" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="scaleroom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#AAB7B8;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontColor=#767676;fontSize=12;fontStyle=0;arcSize=6;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Capacity for scaling&lt;br&gt;(desired_count &amp;gt; 1,&lt;br&gt;availability_zone_rebalancing=ENABLED)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="150" width="510" x="1210" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="e-101" edge="1" parent="1" source="enduser" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="igw" value="">
+          <mxGeometry relative="1" x="-0.0002" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1810" y="357.53" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-2" connectable="0" parent="e-101" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="API Calls" vertex="1">
+          <mxGeometry relative="1" x="-0.7799" as="geometry">
+            <mxPoint x="-23" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-102" edge="1" parent="1" source="igw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="alb" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1120" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-103" edge="1" parent="1" source="alb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="auth" value="/api/auth/*">
+          <mxGeometry relative="1" x="0.1118" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="600" y="301.6" />
+            </Array>
+            <mxPoint x="1105" y="301.0588235294118" as="sourcePoint" />
+            <mxPoint x="597.4705882352941" y="711.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-104" edge="1" parent="1" source="alb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="orders" value="/api/orders/*">
+          <mxGeometry relative="1" x="-0.0796" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-105" edge="1" parent="1" source="alb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="notifications" value="/api/notifications/*">
+          <mxGeometry relative="1" x="-0.4684" y="5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-106" edge="1" parent="1" source="orders" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#8C4FFF;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="notifications" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;Service Connect&lt;br&gt;notifications.internal:8080&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-109" edge="1" parent="1" source="auth" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DD344C;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="secrets" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="575.03" y="580" />
+              <mxPoint x="575.03" y="580" />
+            </Array>
+            <mxPoint x="575" y="590" as="sourcePoint" />
+            <mxPoint x="577.0666666666666" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-111" edge="1" parent="1" source="ecscluster" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#D05C17;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;exitX=0;exitY=0.422;exitDx=0;exitDy=0;exitPerimeter=0;" target="ecr" value="pull image">
+          <mxGeometry relative="1" x="-0.7416" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="528.18" y="788.1" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-112" edge="1" parent="1" source="ecscluster" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#BC1356;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="cw" value="logs">
+          <mxGeometry relative="1" x="-0.8595" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="805" y="530" />
+              <mxPoint x="805" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cw" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F34482;gradientDirection=north;fillColor=#BC1356;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;labelPosition=center;" value="CloudWatch Logs" vertex="1">
+          <mxGeometry height="60" width="60" x="775" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="e-113" edge="1" parent="1" source="ecscluster" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#BC1356;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="xray" value="traces via ADOT">
+          <mxGeometry relative="1" x="-0.8595" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="920" y="530" />
+              <mxPoint x="920" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xray" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F34482;gradientDirection=north;fillColor=#BC1356;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.xray;labelPosition=center;" value="X-Ray" vertex="1">
+          <mxGeometry height="60" width="60" x="890" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="e-114" edge="1" parent="1" source="nat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;" target="igw" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1810" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-115" edge="1" parent="1" source="developer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gha" value="git push">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-117" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="ecr" value="build &amp; push image">
+          <mxGeometry relative="1" x="-0.616" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="255" y="750" />
+              <mxPoint x="440" y="750" />
+            </Array>
+            <mxPoint x="332" y="888.4666666666665" as="sourcePoint" />
+            <mxPoint x="450" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="secrets" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#FF5252;gradientDirection=north;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.secrets_manager;labelPosition=center;" value="Secrets Manager" vertex="1">
+          <mxGeometry height="60" width="60" x="545" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="e-118" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#F5F5F5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.001;entryY=0.481;entryDx=0;entryDy=0;entryPerimeter=0;" target="ecscluster" value="register-task-definition +&lt;br&gt;update-service (triggers blue/green)">
+          <mxGeometry relative="1" x="-0.2014" as="geometry">
+            <mxPoint x="-1" as="offset" />
+            <Array as="points">
+              <mxPoint x="380.03" y="886.5" />
+              <mxPoint x="380.03" y="808.36" />
+            </Array>
+            <mxPoint x="342" y="925.5" as="sourcePoint" />
+            <mxPoint x="525" y="813" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-1" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;innerLoopWaypoints=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="gha">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-20" edge="1" parent="1" source="orders" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DD344C;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="secrets" value="SECRET">
+          <mxGeometry relative="1" x="-0.3603" y="5" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="750" y="720" />
+              <mxPoint x="575" y="720" />
+            </Array>
+            <mxPoint x="585" y="722" as="sourcePoint" />
+            <mxPoint x="585" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-23" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=middle;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;labelPosition=center;" value="&lt;div&gt;Frontend&lt;/div&gt;&lt;div&gt;S3 bucket&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="60" x="1515" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-24" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=top;verticalAlign=middle;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;labelPosition=center;" value="CloudFront&lt;br&gt;frontend CDN" vertex="1">
+          <mxGeometry height="60" width="60" x="1350" y="153" as="geometry" />
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-25" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DD344C;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="iam" value="AssumeRoleWithWebIdentity&lt;br&gt;(no static AWS keys)">
+          <mxGeometry relative="1" x="-0.8289" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="255" y="930.03" />
+              <mxPoint x="690.03" y="930.03" />
+            </Array>
+            <mxPoint x="366" y="974" as="sourcePoint" />
+            <mxPoint x="721" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-26" edge="1" parent="1" source="orders" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#3334B9;fontSize=11;labelBackgroundColor=#F5F5F5;" target="redis" value="read session">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="780" y="850" />
+              <mxPoint x="840" y="850" />
+              <mxPoint x="840" y="890" />
+            </Array>
+            <mxPoint x="390" y="680" as="sourcePoint" />
+            <mxPoint x="446" y="785" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-27" edge="1" parent="1" source="auth" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#3334B9;fontSize=11;labelBackgroundColor=#F5F5F5;" target="redis" value="write session">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="890" />
+            </Array>
+            <mxPoint x="400" y="710" as="sourcePoint" />
+            <mxPoint x="538" y="842" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-28" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#8C4FFF;fontSize=11;labelBackgroundColor=#F5F5F5;dashed=1;" target="0-sNGsutb4zf5mqRCSlx-24" value="invalidate cache">
+          <mxGeometry relative="1" x="-0.8716" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="250" y="980" />
+              <mxPoint x="1390" y="980" />
+            </Array>
+            <mxPoint x="1400" y="964" as="sourcePoint" />
+            <mxPoint x="2445" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-29" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#277116;fontSize=11;labelBackgroundColor=#F5F5F5;" target="0-sNGsutb4zf5mqRCSlx-23" value="sync static files">
+          <mxGeometry relative="1" x="-0.8568" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="240" y="1010" />
+              <mxPoint x="1545.1" y="1010" />
+            </Array>
+            <mxPoint x="890" y="1317" as="sourcePoint" />
+            <mxPoint x="1560" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-31" edge="1" parent="1" source="enduser" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#8C4FFF;fontSize=11;labelBackgroundColor=#F5F5F5;" target="0-sNGsutb4zf5mqRCSlx-24" value="load UI">
+          <mxGeometry relative="1" x="-0.7477" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1370" y="370" />
+            </Array>
+            <mxPoint x="1280" y="398" as="sourcePoint" />
+            <mxPoint x="1960" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0-sNGsutb4zf5mqRCSlx-32" edge="1" parent="1" source="0-sNGsutb4zf5mqRCSlx-24" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#8C4FFF;fontSize=11;labelBackgroundColor=#F5F5F5;" target="0-sNGsutb4zf5mqRCSlx-23" value="OAC">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1290" y="200" as="sourcePoint" />
+            <mxPoint x="1355" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

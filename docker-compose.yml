@@ -1,10 +1,5 @@
+version: "3.9"
 
-
-# Service names below (redis, auth, orders, notifications) double as DNS
-# names on this compose network -- e.g. orders reaches notifications at
-# http://notifications:8080. That's the same pattern Cloud Map gives you on
-# ECS later (e.g. http://notifications.internal:8080), just simulated
-# locally so you can prove the app logic works before adding AWS.
 
 services:
   redis:

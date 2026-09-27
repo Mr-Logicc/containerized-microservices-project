@@ -11,6 +11,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 type Notification struct {
@@ -25,9 +33,6 @@ type notifyRequest struct {
 	Message  string `json:"message"`
 }
 
-// store is a tiny in-memory record of notifications, kept only so /notifications
-// has something to show. In a real system this would publish to SNS/SQS/email --
-// out of scope for this project's stated learning outcomes.
 type store struct {
 	mu    sync.Mutex
 	items []Notification
@@ -57,17 +62,26 @@ func (s *store) all() []Notification {
 }
 
 func main() {
+	ctx := context.Background()
+
+	shutdownTracing, err := setupTracing(ctx, "notifications")
+	if err != nil {
+		log.Printf("tracing setup failed, continuing without it: %v", err)
+		shutdownTracing = func(context.Context) error { return nil }
+	}
+	defer shutdownTracing(ctx)
+
 	port := getenv("PORT", "8080")
 	st := &store{}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-	})
+	}
 
-	mux.HandleFunc("POST /notify", func(w http.ResponseWriter, r *http.Request) {
+	notifyHandler := func(w http.ResponseWriter, r *http.Request) {
 		var req notifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Username == "" || req.Message == "" {
 			http.Error(w, "username and message are required", http.StatusBadRequest)
@@ -76,14 +90,62 @@ func main() {
 		n := st.add(req.Username, req.Message)
 		log.Printf("recorded notification %s for user=%s", n.ID, n.Username)
 		writeJSON(w, http.StatusCreated, n)
-	})
+	}
 
-	mux.HandleFunc("GET /notifications", func(w http.ResponseWriter, r *http.Request) {
+	listHandler := func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, st.all())
-	})
+	}
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /api/notifications/health", healthHandler)
+	mux.HandleFunc("POST /notify", notifyHandler)
+	mux.HandleFunc("POST /api/notifications/notify", notifyHandler)
+	mux.HandleFunc("GET /notifications", listHandler)
+	mux.HandleFunc("GET /api/notifications/notifications", listHandler)
+
+	srv := &http.Server{Addr: ":" + port, Handler: corsMiddleware(otelhttp.NewHandler(mux, "notifications"))}
 	runWithGracefulShutdown(srv, "notifications")
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
+	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
+
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(attribute.String("service.name", serviceName)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("building resource: %w", err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	return tp.Shutdown, nil
 }
 
 func getenv(key, fallback string) string {

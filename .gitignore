@@ -2,6 +2,13 @@
 /orders/app
 /notifications/app
 .env
-.idea/
 .vscode/
-README.md
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/.terraform.lock.hcl
+infra/crash.log
+infra/README.md

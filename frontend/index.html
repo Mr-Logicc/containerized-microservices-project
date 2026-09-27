@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShopWave - Microservices Console</title>
+<style>
+  :root {
+    --orange: #ED7100; --purple: #8C4FFF; --blue: #147EBA; --green: #2E7D32;
+    --red: #C0152F; --bg: #F5F7FA; --card: #FFFFFF; --border: #E1E6EB; --text: #232F3E; --muted: #6B7785;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { background: var(--text); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; color: #B9C2CC; font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid; gap: 18px;
+         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .full { grid-column: 1 / -1; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .badge { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #999; }
+  .badge.up { background: var(--green); box-shadow: 0 0 0 3px rgba(46,125,50,0.15); }
+  .badge.down { background: var(--red); box-shadow: 0 0 0 3px rgba(192,21,47,0.15); }
+  .badge.checking { background: #E0A800; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .health-cell { border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+  .health-cell .name { font-weight: 600; font-size: 13px; margin-top: 6px; }
+  .health-cell .meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 9px 14px; font-size: 13px;
+           font-weight: 600; background: var(--orange); color: #fff; margin-top: 12px; }
+  button.secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  button:disabled { background: #ccc; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .pill.ok { background: #E8F5E9; color: var(--green); }
+  .pill.err { background: #FDECEA; color: var(--red); }
+  .log { font-family: "SF Mono", Consolas, monospace; font-size: 11.5px; max-height: 220px;
+         overflow-y: auto; background: #0F1720; color: #D6E1EA; border-radius: 8px; padding: 10px; }
+  .log div { padding: 2px 0; border-bottom: 1px solid #1E2A36; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .status-line { font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .status-line.ok { color: var(--green); }
+  .status-line.err { color: var(--red); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
+  footer a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ShopWave - Microservices Console</h1>
+  <p>A UI for exercising the Auth / Orders / Notifications services running on ECS Fargate</p>
+</header>
+
+<main>
+
+  <div class="card full">
+    <h2>API Endpoint</h2>
+    <div class="row">
+      <div style="flex:3">
+        <label for="apiBase">Base URL (the ALB, e.g. http://your-alb-dns-name)</label>
+        <input id="apiBase" type="text" placeholder="http://your-alb-dns-name.us-east-1.elb.amazonaws.com">
+      </div>
+      <div style="flex:1; align-self:flex-end;">
+        <button class="secondary" onclick="saveBase()" style="width:100%; margin-top:0;">Save</button>
+      </div>
+    </div>
+    <div id="baseStatus" class="status-line muted">
+      This is pre-filled automatically when deployed via GitHub Actions. Edit it if you're pointing at a
+      different environment, then click Save.
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>Service Health <span class="muted" style="font-weight:400;">(polled every 5s)</span></h2>
+    <div class="health-grid">
+      <div class="health-cell" id="health-auth">
+        <span class="badge checking"></span>
+        <div class="name">auth</div>
+        <div class="meta" id="health-auth-meta">checking...</div>
+      </div>
+      <div class="health-cell" id="health-orders">
+        <span class="badge checking"></span>
+        <div class="name">orders</div>
+        <div class="meta" id="health-orders-meta">checking...</div>
+      </div>
+      <div class="health-cell" id="health-notifications">
+        <span class="badge checking"></span>
+        <div class="name">notifications</div>
+        <div class="meta" id="health-notifications-meta">checking...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Log In (auth)</h2>
+    <label for="username">Username</label>
+    <input id="username" type="text" placeholder="Ahmed" value="Ahmed">
+    <label for="password">Password</label>
+    <input id="password" type="password" placeholder="anything" value="anything">
+    <div class="muted" style="margin-top:6px;">This project uses intentionally fake auth - any non-empty
+      username/password is accepted.</div>
+    <button onclick="login()">Log In</button>
+    <div id="loginStatus" class="status-line"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Place an Order (orders)</h2>
+    <label for="item">Item</label>
+    <input id="item" type="text" placeholder="keyboard" value="keyboard">
+    <label for="quantity">Quantity</label>
+    <input id="quantity" type="number" min="1" value="1">
+    <button id="orderBtn" onclick="placeOrder()" disabled>Log in first</button>
+    <div id="orderStatus" class="status-line"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your Orders <span class="muted" style="font-weight:400;">(orders)</span></h2>
+    <button class="secondary" onclick="loadOrders()">Refresh</button>
+    <table id="ordersTable">
+      <thead><tr><th>ID</th><th>Item</th><th>Qty</th><th>Created</th></tr></thead>
+      <tbody><tr><td colspan="4" class="muted">Log in and place an order to see it here.</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Notifications Feed <span class="muted" style="font-weight:400;">(notifications, via Service Connect)</span></h2>
+    <button class="secondary" onclick="loadNotifications()">Refresh</button>
+    <table id="notificationsTable">
+      <thead><tr><th>ID</th><th>User</th><th>Message</th></tr></thead>
+      <tbody><tr><td colspan="3" class="muted">Nothing yet -- place an order to trigger one.</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card full">
+    <h2>Request Log <span class="muted" style="font-weight:400;">-- every call this page has made</span></h2>
+    <div class="log" id="requestLog"><div class="muted">Requests will appear here as you use the console above.</div></div>
+  </div>
+
+</main>
+
+<footer>
+  Frontend hosted on S3 + CloudFront. Backend: ECS Fargate, ALB, Service Connect, ElastiCache, Secrets Manager.
+  See the project <a href="https://github.com/Mr-Logicc/containerized-microservices-project" target="_blank">README</a> for the full architecture.
+</footer>
+
+<script>
+  let token = null;
+  const DEFAULT_BASE = "__API_BASE_URL__"; // replaced at deploy time by GitHub Actions
+
+  function getBase() {
+    return localStorage.getItem("apiBase") || (DEFAULT_BASE.indexOf("__") === 0 ? "" : DEFAULT_BASE);
+  }
+
+  function saveBase() {
+    const v = document.getElementById("apiBase").value.trim().replace(/\/$/, "");
+    localStorage.setItem("apiBase", v);
+    setStatus("baseStatus", "Saved. Health checks and requests will use: " + v, "ok");
+  }
+
+  function setStatus(id, msg, kind) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = "status-line " + (kind || "");
+  }
+
+  function logRequest(method, path, status, ms) {
+    const el = document.getElementById("requestLog");
+    const ok = status >= 200 && status < 300;
+    const line = document.createElement("div");
+    const time = new Date().toLocaleTimeString();
+    line.innerHTML = `<span class="muted">${time}</span> &nbsp; ${method} ${path} &nbsp; ` +
+      `<span class="pill ${ok ? "ok" : "err"}">${status}</span> &nbsp; <span class="muted">${ms}ms</span>`;
+    el.prepend(line);
+    while (el.children.length > 40) el.removeChild(el.lastChild);
+  }
+
+  async function callApi(method, path, body, auth) {
+    const base = getBase();
+    const started = performance.now();
+    const headers = { "Content-Type": "application/json" };
+    if (auth && token) headers["Authorization"] = "Bearer " + token;
+    let res, data;
+    try {
+      res = await fetch(base + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const ms = Math.round(performance.now() - started);
+      logRequest(method, path, res.status, ms);
+      try { data = await res.json(); } catch (e) { data = null; }
+      return { ok: res.ok, status: res.status, data };
+    } catch (e) {
+      const ms = Math.round(performance.now() - started);
+      logRequest(method, path, 0, ms);
+      return { ok: false, status: 0, data: null, networkError: true };
+    }
+  }
+
+  async function checkHealth(service) {
+    const badge = document.querySelector(`#health-${service} .badge`);
+    const meta = document.getElementById(`health-${service}-meta`);
+    const started = performance.now();
+    const result = await callApi("GET", `/api/${service}/health`);
+    const ms = Math.round(performance.now() - started);
+    badge.className = "badge " + (result.ok ? "up" : "down");
+    meta.textContent = result.ok ? `healthy . ${ms}ms` : "unreachable";
+  }
+
+  function pollHealth() {
+    ["auth", "orders", "notifications"].forEach(checkHealth);
+  }
+
+  async function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    if (!username || !password) { setStatus("loginStatus", "Username and password are required.", "err"); return; }
+    setStatus("loginStatus", "Logging in...", "");
+    const result = await callApi("POST", "/api/auth/login", { username, password });
+    if (result.ok && result.data && result.data.token) {
+      token = result.data.token;
+      setStatus("loginStatus", `Logged in as ${username}. Session cached in Redis for ${result.data.expires_in_seconds}s.`, "ok");
+      const btn = document.getElementById("orderBtn");
+      btn.disabled = false;
+      btn.textContent = "Place Order";
+      loadOrders();
+    } else {
+      setStatus("loginStatus", "Login failed -- check the API base URL and that the auth service is healthy.", "err");
+    }
+  }
+
+  async function placeOrder() {
+    const item = document.getElementById("item").value.trim();
+    const quantity = parseInt(document.getElementById("quantity").value, 10);
+    if (!item || !quantity || quantity < 1) { setStatus("orderStatus", "Item and a positive quantity are required.", "err"); return; }
+    setStatus("orderStatus", "Placing order...", "");
+    const result = await callApi("POST", "/api/orders/orders", { item, quantity }, true);
+    if (result.ok) {
+      setStatus("orderStatus", `Order ${result.data.id} placed -- check the Notifications feed below.`, "ok");
+      loadOrders();
+      setTimeout(loadNotifications, 600); // give the async notify call a moment
+    } else {
+      setStatus("orderStatus", "Order failed -- is your session still valid?", "err");
+    }
+  }
+
+  async function loadOrders() {
+    const tbody = document.querySelector("#ordersTable tbody");
+    if (!token) return;
+    const result = await callApi("GET", "/api/orders/orders", null, true);
+    if (!result.ok || !result.data) return;
+    if (result.data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="muted">No orders yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = result.data.map(o =>
+      `<tr><td>${o.id}</td><td>${o.item}</td><td>${o.quantity}</td><td>${o.created_at}</td></tr>`
+    ).join("");
+  }
+
+  async function loadNotifications() {
+    const tbody = document.querySelector("#notificationsTable tbody");
+    const result = await callApi("GET", "/api/notifications/notifications");
+    if (!result.ok || !result.data) return;
+    if (result.data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">Nothing yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = result.data.slice().reverse().map(n =>
+      `<tr><td>${n.id}</td><td>${n.username}</td><td>${n.message}</td></tr>`
+    ).join("");
+  }
+
+  // ---- init ----
+  document.getElementById("apiBase").value = getBase();
+  pollHealth();
+  setInterval(pollHealth, 5000);
+  loadNotifications();
+  setInterval(loadNotifications, 8000);
+</script>
+
+</body>
+</html>

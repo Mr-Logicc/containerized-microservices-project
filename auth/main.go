@@ -14,13 +14,17 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
 	"github.com/redis/go-redis/v9"
 )
 
-// sessionTTL controls how long a login session lives in Redis before it
-// expires on its own. Orders and Notifications never talk to Auth directly --
-// they just read this same Redis instance, which is the "shared session
-// cache across stateless containers" pattern this project is about.
 const sessionTTL = 30 * time.Minute
 
 type loginRequest struct {
@@ -29,25 +33,38 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	Token           string `json:"token"`
+	Token            string `json:"token"`
 	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 func main() {
+	ctx := context.Background()
+
+	shutdownTracing, err := setupTracing(ctx, "auth")
+	if err != nil {
+		log.Printf("tracing setup failed, continuing without it: %v", err)
+		shutdownTracing = func(context.Context) error { return nil }
+	}
+	defer shutdownTracing(ctx)
+
 	port := getenv("PORT", "8080")
 	redisAddr := getenv("REDIS_ADDR", "localhost:6379")
+
+	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
+		log.Printf("loaded API_KEY secret (%d chars)", len(apiKey))
+	}
 
 	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
 	defer rdb.Close()
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-	})
+	}
 
-	mux.HandleFunc("POST /login", func(w http.ResponseWriter, r *http.Request) {
+	loginHandler := func(w http.ResponseWriter, r *http.Request) {
 		var req loginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -59,10 +76,6 @@ func main() {
 			return
 		}
 
-		// NOTE: this is intentionally fake auth -- any non-empty username and
-		// password is accepted, and nothing is checked against a real user
-		// store. The learning goal of this project is ECS, service discovery,
-		// and the shared cache, not building a real identity provider.
 		token, err := generateToken()
 		if err != nil {
 			log.Printf("token generation failed: %v", err)
@@ -83,10 +96,56 @@ func main() {
 			Token:            token,
 			ExpiresInSeconds: int(sessionTTL.Seconds()),
 		})
-	})
+	}
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /api/auth/health", healthHandler)
+	mux.HandleFunc("POST /login", loginHandler)
+	mux.HandleFunc("POST /api/auth/login", loginHandler)
+
+	srv := &http.Server{Addr: ":" + port, Handler: corsMiddleware(otelhttp.NewHandler(mux, "auth"))}
 	runWithGracefulShutdown(srv, "auth")
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
+	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
+
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(attribute.String("service.name", serviceName)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("building resource: %w", err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	return tp.Shutdown, nil
 }
 
 func generateToken() (string, error) {

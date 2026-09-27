@@ -1,0 +1,68 @@
+name: Deploy service
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: "auth, orders, or notifications"
+        required: true
+        type: string
+      container-name:
+        description: "Name of the app container inside the task definition (matches service-name in this project)"
+        required: true
+        type: string
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC (no long-lived keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.PROJECT_NAME }}-${{ inputs.service-name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ vars.PROJECT_NAME }}-${{ inputs.service-name }}" \
+            --query taskDefinition \
+            > task-definition.json
+
+      - name: Render the task definition with the new image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ inputs.service-name }}/task-definition.json
+          container-name: ${{ inputs.container-name }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy (registers a new revision and updates the service)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          cluster: ${{ vars.ECS_CLUSTER_NAME }}
+          service: "${{ vars.PROJECT_NAME }}-${{ inputs.service-name }}"
+          wait-for-service-stability: true

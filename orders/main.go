@@ -14,6 +14,14 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -30,10 +38,6 @@ type createOrderRequest struct {
 	Quantity int    `json:"quantity"`
 }
 
-// orderStore is a tiny in-memory store. The point of this project is the
-// infrastructure around the service, not a real persistence layer -- swap
-// this out for DynamoDB/RDS later if you want, but it isn't required to hit
-// any of the ECS/networking/CI-CD learning outcomes.
 type orderStore struct {
 	mu   sync.Mutex
 	data map[string][]Order // keyed by username
@@ -68,26 +72,42 @@ func (s *orderStore) list(username string) []Order {
 }
 
 func main() {
+	ctx := context.Background()
+
+	shutdownTracing, err := setupTracing(ctx, "orders")
+	if err != nil {
+		log.Printf("tracing setup failed, continuing without it: %v", err)
+		shutdownTracing = func(context.Context) error { return nil }
+	}
+	defer shutdownTracing(ctx)
+
 	port := getenv("PORT", "8080")
 	redisAddr := getenv("REDIS_ADDR", "localhost:6379")
-	// In docker-compose this is the compose service name (http://notifications:8080).
-	// On ECS this becomes the Cloud Map DNS name (e.g. http://notifications.internal:8080).
+
 	notificationsURL := getenv("NOTIFICATIONS_URL", "http://localhost:8083")
+
+	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
+		log.Printf("loaded API_KEY secret (%d chars)", len(apiKey))
+	}
 
 	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
 	defer rdb.Close()
 
 	store := newOrderStore()
-	httpClient := &http.Client{Timeout: 3 * time.Second}
+
+	httpClient := &http.Client{
+		Timeout:   3 * time.Second,
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-	})
+	}
 
-	mux.HandleFunc("POST /orders", func(w http.ResponseWriter, r *http.Request) {
+	createOrderHandler := func(w http.ResponseWriter, r *http.Request) {
 		username, ok := authenticate(r, rdb)
 		if !ok {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -107,25 +127,69 @@ func main() {
 			fmt.Sprintf("Order %s placed: %dx %s", order.ID, order.Quantity, order.Item))
 
 		writeJSON(w, http.StatusCreated, order)
-	})
+	}
 
-	mux.HandleFunc("GET /orders", func(w http.ResponseWriter, r *http.Request) {
+	listOrdersHandler := func(w http.ResponseWriter, r *http.Request) {
 		username, ok := authenticate(r, rdb)
 		if !ok {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 		writeJSON(w, http.StatusOK, store.list(username))
-	})
+	}
 
-	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /api/orders/health", healthHandler)
+	mux.HandleFunc("POST /orders", createOrderHandler)
+	mux.HandleFunc("POST /api/orders/orders", createOrderHandler)
+	mux.HandleFunc("GET /orders", listOrdersHandler)
+	mux.HandleFunc("GET /api/orders/orders", listOrdersHandler)
+
+	srv := &http.Server{Addr: ":" + port, Handler: corsMiddleware(otelhttp.NewHandler(mux, "orders"))}
 	runWithGracefulShutdown(srv, "orders")
 }
 
-// authenticate looks the bearer token up directly in the shared Redis cache.
-// Orders never calls Auth over the network to check a session -- it just
-// reads the cache Auth already wrote to. That's the whole point of putting
-// ElastiCache in front of stateless containers.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
+	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
+
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(attribute.String("service.name", serviceName)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("building resource: %w", err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	return tp.Shutdown, nil
+}
+
 func authenticate(r *http.Request, rdb *redis.Client) (string, bool) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
@@ -145,8 +209,6 @@ func authenticate(r *http.Request, rdb *redis.Client) (string, bool) {
 	return username, true
 }
 
-// notify calls the Notifications service by its DNS name. It logs and moves
-// on if that call fails -- a notification failure shouldn't fail the order.
 func notify(client *http.Client, baseURL, username, message string) {
 	payload, _ := json.Marshal(map[string]string{"username": username, "message": message})
 	resp, err := client.Post(baseURL+"/notify", "application/json", bytes.NewReader(payload))
