@@ -20,9 +20,9 @@ output "redis_endpoint" {
   value = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
 
-output "frontend_url" {
+output "app_url" {
   description = "Open this in a browser to use the console"
-  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+  value       = "https://${aws_cloudfront_distribution.this.domain_name}"
 }
 
 output "frontend_bucket_name" {
@@ -31,5 +31,5 @@ output "frontend_bucket_name" {
 
 output "cloudfront_distribution_id" {
   description = "Needed by GitHub Actions to invalidate the cache after each deploy"
-  value       = aws_cloudfront_distribution.frontend.id
+  value       = aws_cloudfront_distribution.this.id
 }

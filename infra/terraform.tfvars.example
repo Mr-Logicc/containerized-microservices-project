@@ -1,7 +1,10 @@
 # Copy this to terraform.tfvars and fill in your own values.
 # terraform.tfvars is gitignored
 
-github_repo = "your-github-username/your-repo-name"
+github_owner = "your-github-username"
+github_owner_id = "your_account_id"
+github_repo = "your-repo-name"
+github_repo_id = "your_repo_id"
 
 # aws_region           = "us-east-1"
 # project_name         = "microdemo"

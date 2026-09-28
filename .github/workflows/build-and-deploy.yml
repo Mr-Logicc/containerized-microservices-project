@@ -33,14 +33,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug OIDC token claims
-        run: |
-          JWT=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
-          PAYLOAD=$(echo "$JWT" | cut -d. -f2 | tr '_-' '/+')
-          while [ $((${#PAYLOAD} % 4)) -ne 0 ]; do PAYLOAD="${PAYLOAD}="; done
-          echo "$PAYLOAD" | base64 -d | jq '{sub, aud, repository, ref, actor}'
-
       - name: Configure AWS credentials via OIDC (no long-lived keys)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -49,7 +41,7 @@ jobs:
 
       - name: Inject the real API base URL
         run: |
-          sed -i "s|__API_BASE_URL__|http://${{ vars.ALB_DNS_NAME }}|g" frontend/index.html
+          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" frontend/index.html
 
       - name: Sync to S3
         run: |

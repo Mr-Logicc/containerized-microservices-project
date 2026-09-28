@@ -93,9 +93,7 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          # Scoped to this repo, any branch/tag/PR. Restrict to
-          # "repo:${var.github_repo}:ref:refs/heads/main" to limit deploys to main.
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/heads/main"
         }
       }
     }]
@@ -161,7 +159,7 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
         Sid      = "FrontendInvalidate"
         Effect   = "Allow"
         Action   = "cloudfront:CreateInvalidation"
-        Resource = aws_cloudfront_distribution.frontend.arn
+        Resource = aws_cloudfront_distribution.this.arn
       },
     ]
   })
