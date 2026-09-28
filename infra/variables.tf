@@ -29,7 +29,19 @@ variable "api_key_secret_value" {
   sensitive   = true
 }
 
+variable "github_owner" {
+  description = "GitHub username"
+  type        = string
+}
+variable "github_owner_id" {
+  description = "The immutable numeric ID of the GitHub account/organization."
+  type        = string
+}
 variable "github_repo" {
-  description = "GitHub repo allowed to assume the CI role via OIDC, in \"owner/repo\" form (e.g. \"amir/microservices-project\"). Required -- there's no safe default, an open trust policy would let any GitHub repo assume this role."
+  description = "GitHub repo name."
+  type        = string
+}
+variable "github_repo_id" {
+  description = "The immutable numeric ID of the GitHub repository."
   type        = string
 }

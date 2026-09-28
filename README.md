@@ -11,6 +11,7 @@ This README is written AWS-first on purpose: the goal of the project is demonstr
 
 ## Table of Contents
 
+- [Live Demo](#live-demo)
 - [Customer Scenario](#customer-scenario)
 - [Architecture Overview](#architecture-overview)
 - [Why This Architecture: AWS Design Decisions](#why-this-architecture-aws-design-decisions)
@@ -20,9 +21,15 @@ This README is written AWS-first on purpose: the goal of the project is demonstr
 - [Testing the Live Deployment on AWS](#testing-the-live-deployment-on-aws)
 - [Known Limitations](#known-limitations)
 
-A browser-based console (`frontend/`) is also included for testing and
-visualizing the running system
-[**Live link**](https://d3faa1nffwbywe.cloudfront.net/).
+
+
+---
+
+## Live Demo
+
+A browser-based console for testing and visualizing the deployed services [**Live link**](https://d3faa1nffwbywe.cloudfront.net/).
+
+For manual testing using curl you can follow [**this**](#option-b-curl-for-scripting-or-when-you-want-to-see-raw-responses) section using the deployed [**application load balancer's public address**](http://demo1-alb-1678753967.us-east-1.elb.amazonaws.com)
 
 ---
 
@@ -183,7 +190,7 @@ Then set these **GitHub repository variables** (Settings → Secrets and variabl
 | `AWS_REGION` | (whatever you set - default `us-east-1`) |
 | `PROJECT_NAME` | (whatever you set - default `microdemo`) |
 | `ECS_CLUSTER_NAME` | `ecs_cluster_name` |
-| `ALB_DNS_NAME` | `alb_dns_name` |
+| `API_BASE_URL` | `app_url` |
 | `FRONTEND_BUCKET_NAME` | `frontend_bucket_name` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `cloudfront_distribution_id` |
 
@@ -194,7 +201,7 @@ Push to `main` and GitHub Actions builds and deploys all three services plus the
 ### Option A: the UI console (easiest)
 
 ```bash
-terraform -chdir=infra output frontend_url
+terraform -chdir=infra output app_url
 ```
 
 Open that URL. It's a small browser console (login, place an order, watch notifications and service health) that exercises the same three services the curl commands below hit - useful for actually *seeing* the system run rather than reading JSON in a terminal. It talks to the ALB directly from your browser, so if it can't reach a service, your browser's network tab will show exactly which call failed and why - often more useful for debugging than curl's plain "connection refused."
