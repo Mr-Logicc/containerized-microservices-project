@@ -25,7 +25,7 @@ resource "aws_security_group_rule" "redis_from_ecs" {
   source_security_group_id = aws_security_group.ecs_tasks.id
 }
 
-
+# Single node, no replica.
 resource "aws_elasticache_cluster" "redis" {
   cluster_id         = "${var.project_name}-redis"
   engine             = "redis"

@@ -33,6 +33,7 @@ type notifyRequest struct {
 	Message  string `json:"message"`
 }
 
+// store is an in-memory record of received notifications.
 type store struct {
 	mu    sync.Mutex
 	items []Notification
@@ -96,6 +97,9 @@ func main() {
 		writeJSON(w, http.StatusOK, st.all())
 	}
 
+	// Bare paths serve internal Service Connect traffic from Orders;
+	// /api/notifications/-prefixed paths serve requests forwarded by the
+	// ALB, which does not strip the path prefix.
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("GET /api/notifications/health", healthHandler)
 	mux.HandleFunc("POST /notify", notifyHandler)
@@ -107,6 +111,8 @@ func main() {
 	runWithGracefulShutdown(srv, "notifications")
 }
 
+// corsMiddleware permits cross-origin requests from the frontend, which is
+// served from a different origin than this API.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -120,6 +126,9 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// setupTracing configures an OTLP/HTTP exporter targeting the ADOT
+// Collector sidecar. Tracing is disabled without interrupting request
+// handling if the collector is unreachable.
 func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
 	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
 

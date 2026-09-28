@@ -6,6 +6,8 @@ resource "aws_lb" "this" {
   subnets            = module.vpc.public_subnets
 }
 
+# Shared by all three services. Each service (see the microservice module)
+# adds its own path-based listener rule and blue/green target group pair.
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
   port               = 80

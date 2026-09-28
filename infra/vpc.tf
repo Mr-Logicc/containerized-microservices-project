@@ -11,7 +11,7 @@ module "vpc" {
   private_subnets = ["10.20.10.0/24", "10.20.11.0/24"]
 
   enable_nat_gateway = true
-  single_nat_gateway = true 
+  single_nat_gateway = true # one NAT gateway for the VPC rather than one per AZ
 
   enable_dns_hostnames = true
   enable_dns_support   = true

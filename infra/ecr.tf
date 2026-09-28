@@ -13,7 +13,7 @@ resource "aws_ecr_repository" "services" {
   }
 }
 
-
+# Expires untagged image layers so repositories do not grow unbounded.
 resource "aws_ecr_lifecycle_policy" "services" {
   for_each   = aws_ecr_repository.services
   repository = each.value.name

@@ -25,6 +25,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// sessionTTL is the lifetime of a session record in Redis.
 const sessionTTL = 30 * time.Minute
 
 type loginRequest struct {
@@ -50,6 +51,8 @@ func main() {
 	port := getenv("PORT", "8080")
 	redisAddr := getenv("REDIS_ADDR", "localhost:6379")
 
+	// API_KEY is injected by the container runtime from Secrets Manager.
+	// Only its length is logged; the value itself is never written out.
 	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
 		log.Printf("loaded API_KEY secret (%d chars)", len(apiKey))
 	}
@@ -76,6 +79,8 @@ func main() {
 			return
 		}
 
+		// Credentials are not validated against a user store; any
+		// non-empty username/password issues a session.
 		token, err := generateToken()
 		if err != nil {
 			log.Printf("token generation failed: %v", err)
@@ -98,6 +103,9 @@ func main() {
 		})
 	}
 
+	// Each route is registered under both its bare path and an
+	// /api/auth/-prefixed path: the ALB forwards the full request path
+	// unchanged, while local and internal callers use the bare path.
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("GET /api/auth/health", healthHandler)
 	mux.HandleFunc("POST /login", loginHandler)
@@ -107,6 +115,8 @@ func main() {
 	runWithGracefulShutdown(srv, "auth")
 }
 
+// corsMiddleware permits cross-origin requests from the frontend, which is
+// served from a different origin than this API.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -120,6 +130,9 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// setupTracing configures an OTLP/HTTP exporter targeting the ADOT
+// Collector sidecar. Tracing is disabled without interrupting request
+// handling if the collector is unreachable.
 func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
 	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
 

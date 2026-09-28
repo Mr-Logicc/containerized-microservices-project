@@ -1,12 +1,11 @@
-
-
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "frontend" {
   bucket = "${var.project_name}-frontend-${data.aws_caller_identity.current.account_id}"
 }
 
-
+# Bucket stays fully private; CloudFront reaches it only via Origin Access
+# Control (OAC), not a public bucket policy or ACL.
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket                  = aws_s3_bucket.frontend.id
   block_public_acls       = true
@@ -45,7 +44,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # AWS managed: CachingOptimized
   }
 
-  
+  # Serves index.html for 403s so client-side routes do not 404.
   custom_error_response {
     error_code         = 403
     response_code      = 200
@@ -63,6 +62,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
+# Scoped to this specific distribution via the SourceArn condition.
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -83,7 +83,7 @@ resource "aws_s3_bucket_policy" "frontend" {
   })
 }
 
-
+# CI overwrites this object directly via `aws s3 sync`; ignore drift.
 resource "aws_s3_object" "frontend_placeholder" {
   bucket       = aws_s3_bucket.frontend.id
   key          = "index.html"

@@ -1,3 +1,4 @@
+# ECS execution role: image pull, log delivery, and secrets access.
 resource "aws_iam_role" "ecs_execution" {
   name = "${var.project_name}-ecs-execution"
 
@@ -30,6 +31,9 @@ resource "aws_iam_role_policy" "ecs_execution_secrets" {
   })
 }
 
+# ECS task role: permissions granted to application code at runtime, as
+# opposed to the execution role above, which ECS uses to launch the task.
+# The ADOT collector sidecar assumes this role to write traces to X-Ray.
 resource "aws_iam_role" "ecs_task" {
   name = "${var.project_name}-ecs-task"
 
@@ -48,7 +52,8 @@ resource "aws_iam_role_policy_attachment" "ecs_task_xray" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
-
+# Assumed by the ECS service (not application containers) to re-weight the
+# ALB listener rule during a native blue/green deployment.
 resource "aws_iam_role" "ecs_bluegreen_infra" {
   name = "${var.project_name}-ecs-bluegreen-infra"
 
@@ -67,7 +72,7 @@ resource "aws_iam_role_policy_attachment" "ecs_bluegreen_infra" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonECSInfrastructureRolePolicyForLoadBalancers"
 }
 
-
+# OIDC federation for GitHub Actions; no long-lived AWS access keys.
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -88,7 +93,8 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-
+          # Scoped to this repo, any branch/tag/PR. Restrict to
+          # "repo:${var.github_repo}:ref:refs/heads/main" to limit deploys to main.
           "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
         }
       }

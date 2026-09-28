@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/app .
 
-# ---- final stage ----
+# distroless: minimal attack surface, no shell or package manager.
 FROM gcr.io/distroless/static-debian12
 COPY --from=build /out/app /app
 EXPOSE 8080

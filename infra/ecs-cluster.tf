@@ -7,7 +7,9 @@ resource "aws_ecs_cluster" "this" {
   }
 }
 
-
+# Both capacity providers are registered on the cluster; each service pins
+# itself to 100% FARGATE (see the microservice module) rather than
+# inheriting this default mix.
 resource "aws_ecs_cluster_capacity_providers" "this" {
   cluster_name = aws_ecs_cluster.this.name
 

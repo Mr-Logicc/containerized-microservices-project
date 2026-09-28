@@ -38,6 +38,7 @@ type createOrderRequest struct {
 	Quantity int    `json:"quantity"`
 }
 
+// orderStore is an in-memory, per-username order store.
 type orderStore struct {
 	mu   sync.Mutex
 	data map[string][]Order // keyed by username
@@ -83,7 +84,8 @@ func main() {
 
 	port := getenv("PORT", "8080")
 	redisAddr := getenv("REDIS_ADDR", "localhost:6379")
-
+	// Resolves to the notifications container locally, or its Service
+	// Connect DNS name (notifications.internal) when running on ECS.
 	notificationsURL := getenv("NOTIFICATIONS_URL", "http://localhost:8083")
 
 	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
@@ -94,7 +96,8 @@ func main() {
 	defer rdb.Close()
 
 	store := newOrderStore()
-
+	// otelhttp propagates trace context on the outbound call to
+	// notifications so it appears as a child span.
 	httpClient := &http.Client{
 		Timeout:   3 * time.Second,
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
@@ -138,6 +141,9 @@ func main() {
 		writeJSON(w, http.StatusOK, store.list(username))
 	}
 
+	// Each route is registered under both its bare path and an
+	// /api/orders/-prefixed path: the ALB forwards the full request path
+	// unchanged, while local and internal callers use the bare path.
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("GET /api/orders/health", healthHandler)
 	mux.HandleFunc("POST /orders", createOrderHandler)
@@ -149,6 +155,8 @@ func main() {
 	runWithGracefulShutdown(srv, "orders")
 }
 
+// corsMiddleware permits cross-origin requests from the frontend, which is
+// served from a different origin than this API.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -162,6 +170,9 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// setupTracing configures an OTLP/HTTP exporter targeting the ADOT
+// Collector sidecar. Tracing is disabled without interrupting request
+// handling if the collector is unreachable.
 func setupTracing(ctx context.Context, serviceName string) (func(context.Context) error, error) {
 	endpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
 
@@ -190,6 +201,8 @@ func setupTracing(ctx context.Context, serviceName string) (func(context.Context
 	return tp.Shutdown, nil
 }
 
+// authenticate resolves a bearer token directly against the shared Redis
+// cache rather than calling the Auth service.
 func authenticate(r *http.Request, rdb *redis.Client) (string, bool) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
@@ -209,6 +222,9 @@ func authenticate(r *http.Request, rdb *redis.Client) (string, bool) {
 	return username, true
 }
 
+// notify calls the Notifications service by its DNS name. Failures are
+// logged and otherwise ignored; a notification failure must not fail the
+// order.
 func notify(client *http.Client, baseURL, username, message string) {
 	payload, _ := json.Marshal(map[string]string{"username": username, "message": message})
 	resp, err := client.Post(baseURL+"/notify", "application/json", bytes.NewReader(payload))

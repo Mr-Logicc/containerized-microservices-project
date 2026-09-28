@@ -4,6 +4,7 @@ locals {
   container_name = var.service_name
   collector_name = "${var.service_name}-otel-collector"
 
+  # Passed to the ADOT Collector via AOT_CONFIG_CONTENT.
   otel_collector_config = yamlencode({
     receivers = {
       otlp = {
@@ -60,8 +61,6 @@ resource "aws_ecs_task_definition" "this" {
       environment = concat(
         [
           { name = "PORT", value = tostring(var.container_port) },
-          # The collector listens on localhost inside this same task --
-          # Fargate/awsvpc tasks share one network namespace across containers.
           { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "localhost:4318" },
         ],
         [for k, v in var.environment_variables : { name = k, value = v }]
@@ -104,7 +103,9 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 
-
+# Both target groups attach to one listener rule from creation (green at
+# weight 0), which is what allows native ECS blue/green to re-weight this
+# rule independently of the other services sharing the listener.
 resource "aws_lb_target_group" "blue" {
   name        = "${var.project_name}-${var.service_name}-blue"
   port        = var.container_port
@@ -200,6 +201,8 @@ resource "aws_ecs_service" "this" {
     }
   }
 
+  # Classic Cloud Map service_registries is rejected by the ECS API for
+  # BLUE_GREEN services; Service Connect is the supported alternative.
   service_connect_configuration {
     enabled   = true
     namespace = var.cloudmap_namespace_arn
@@ -228,6 +231,8 @@ resource "aws_ecs_service" "this" {
     type = "ECS"
   }
 
+  # The deployment circuit breaker applies only to ROLLING deployments;
+  # target group health checks and bake time are the safeguard here.
   deployment_configuration {
     strategy              = "BLUE_GREEN"
     bake_time_in_minutes  = 2
@@ -236,6 +241,8 @@ resource "aws_ecs_service" "this" {
 
   health_check_grace_period_seconds = 30
 
+  # The running revision is updated by CI via `aws ecs update-service`;
+  # ignore drift so Terraform does not revert it on the next apply.
   lifecycle {
     ignore_changes = [task_definition]
   }

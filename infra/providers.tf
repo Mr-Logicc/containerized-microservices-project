@@ -4,6 +4,8 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
+      # Native ECS blue/green (deployment_configuration.strategy,
+      # load_balancer.advanced_configuration) requires >= 6.20.0.
       version = ">= 6.20.0, < 7.0.0"
     }
   }
