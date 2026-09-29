@@ -79,6 +79,10 @@ resource "aws_iam_openid_connect_provider" "github" {
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
+locals {
+  github_subjects = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/heads/main"
+}
+
 resource "aws_iam_role" "github_actions" {
   name = "${var.project_name}-github-actions"
 
@@ -93,7 +97,7 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = local.github_subjects
         }
       }
     }]
@@ -111,7 +115,7 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
         Sid      = "EcrAuth"
         Effect   = "Allow"
         Action   = ["ecr:GetAuthorizationToken"]
-        Resource = "*" # this specific action doesn't support resource-level scoping
+        Resource = "*"
       },
       {
         Sid    = "EcrPushPull"
@@ -136,7 +140,7 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
           "ecs:DescribeServices",
           "ecs:UpdateService",
         ]
-        Resource = "*" # RegisterTaskDefinition/DescribeTaskDefinition don't support resource-level scoping
+        Resource = "*" # RegisterTaskDefinition/DescribeTaskDefinition do not support resource-level scoping
       },
       {
         Sid      = "PassEcsRoles"

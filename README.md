@@ -29,7 +29,7 @@ This README is written AWS-first on purpose: the goal of the project is demonstr
 
 A browser-based console for testing and visualizing the deployed services [**Live link**](https://d3faa1nffwbywe.cloudfront.net/).
 
-For manual testing using curl you can follow [**this**](#option-b-curl-for-scripting-or-when-you-want-to-see-raw-responses) section using the deployed [**application load balancer's public address**](http://demo1-alb-1678753967.us-east-1.elb.amazonaws.com)
+For manual testing using curl you can follow [**this**](#option-b-curl-for-scripting-or-when-you-want-to-see-raw-responses) section using the link above as $CF value
 
 ---
 
@@ -62,28 +62,29 @@ bad-release problems; **X-Ray** answers the visibility problem.
 ```
 End User's browser
    |
-   +--(1) load the UI --> CloudFront --> S3 (private, via Origin Access Control)
-   |
-   +--(2) API calls (CORS) --> Internet Gateway --> Application Load Balancer
-                                    (path-based routing: /api/auth/*, /api/orders/*, /api/notifications/*)
-                                       |
-                                       +-- ECS Fargate Service: auth ----------+
-                                       +-- ECS Fargate Service: orders --------+---> ECS Service Connect (internal DNS)
-                                       +-- ECS Fargate Service: notifications -+
-                                       |
-                                       +--> ElastiCache Redis (shared session cache, read by auth + orders)
-                                       +--> Secrets Manager (API_KEY injected into auth + orders at launch)
-                                       +--> ECR (3 private repos, one per service, scan-on-push)
-                                       +--> CloudWatch Logs (container + ADOT Collector sidecar logs)
-                                       +--> X-Ray (traces exported by an ADOT Collector sidecar in every task)
+   +-- HTTPS --> CloudFront
+                    |
+                    +-- default behavior -----> S3 (private, via Origin Access Control)
+                    |                            frontend static assets
+                    |
+                    +-- /api/* behavior -------> Application Load Balancer (plain HTTP)
+                                                    (path-based routing: /api/auth/*, /api/orders/*, /api/notifications/*)
+                                                       |
+                                                       +-- ECS Fargate Service: auth ----------+
+                                                       +-- ECS Fargate Service: orders --------+---> ECS Service Connect (internal DNS)
+                                                       +-- ECS Fargate Service: notifications -+
+                                                       |
+                                                       +--> ElastiCache Redis (shared session cache, read by auth + orders)
+                                                       +--> Secrets Manager (API_KEY injected into auth + orders at launch)
+                                                       +--> ECR (3 private repos, one per service, scan-on-push)
+                                                       +--> CloudWatch Logs (container + ADOT Collector sidecar logs)
+                                                       +--> X-Ray (traces exported by an ADOT Collector sidecar in every task)
 
 GitHub Actions --[OIDC, no static AWS keys]--> IAM Role --> ECR push + ECS deploy + S3 sync + CloudFront invalidation
 ```
 
-The frontend is a plain HTML/JS single page — no framework, no build step —
-that calls the ALB directly from the browser. It never sits between the user
-and the API; it's just the UI for exercising the three services and watching
-them run.
+The frontend is a plain HTML/JS single page - no framework, no build step.
+It calls the API using paths relative to its own origin (`/api/...`), and CloudFront is what routes those specific paths to the ALB - the browser never talks to the ALB directly.
 
 See the full diagram at the top of this document for the VPC/subnet/AZ layout.
 
@@ -129,6 +130,13 @@ pillars.
 ### Why S3 + CloudFront instead of ECS for the frontend
 
 The frontend is a static single page with no server-side logic, it doesn't need a running process, so putting it on Fargate would mean paying for and managing compute (plus a task definition, blue/green target groups, and a listener rule) 24/7 just to serve files that never change at request time. **S3 + CloudFront** is effectively free at this scale, there's no compute to patch or scale, and CloudFront's default certificate gives the whole frontend HTTPS for free.
+
+### Why CloudFront proxies /api/* to the ALB
+
+The first working version had the frontend call the ALB directly from the browser, using CORS to permit the cross-origin request. That version broke the moment the frontend went live on CloudFront: browsers block an HTTPS page from making an active request (fetch, XHR) to a plain HTTP endpoint - "mixed content" - and the ALB has no HTTPS listener. CORS headers don't
+help here; the browser refuses the request before CORS is even evaluated.
+
+The fix is an additional CloudFront cache behavior: requests matching `/api/*` are routed to the ALB as a second origin instead of to S3. loudFront terminates HTTPS for the browser and connects to the ALB over plain HTTP on the backend, so from the browser's point of view there is exactly one HTTPS origin serving both the UI and the API, no mixed content, and no CORS handling needed for the deployed environment either. The ALB's own HTTP listener is unchanged; CloudFront is simply an additional, encrypted front door in front of it.
 
 ### A design decision that changed mid-project (and why that's worth reading)
 
@@ -177,7 +185,7 @@ curl -s localhost:8083/notifications
 
 ```bash
 cd infra
-cp terraform.tfvars.example terraform.tfvars   #  set github_repo to "your-username/your-repo"
+cp terraform.tfvars.example terraform.tfvars   # set github owner/repo variables
 terraform init
 terraform apply
 ```
@@ -190,7 +198,6 @@ Then set these **GitHub repository variables** (Settings → Secrets and variabl
 | `AWS_REGION` | (whatever you set - default `us-east-1`) |
 | `PROJECT_NAME` | (whatever you set - default `microdemo`) |
 | `ECS_CLUSTER_NAME` | `ecs_cluster_name` |
-| `API_BASE_URL` | `app_url` |
 | `FRONTEND_BUCKET_NAME` | `frontend_bucket_name` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `cloudfront_distribution_id` |
 
@@ -204,23 +211,23 @@ Push to `main` and GitHub Actions builds and deploys all three services plus the
 terraform -chdir=infra output app_url
 ```
 
-Open that URL. It's a small browser console (login, place an order, watch notifications and service health) that exercises the same three services the curl commands below hit - useful for actually *seeing* the system run rather than reading JSON in a terminal. It talks to the ALB directly from your browser, so if it can't reach a service, your browser's network tab will show exactly which call failed and why - often more useful for debugging than curl's plain "connection refused."
+Open that URL. It's a small browser console (login, place an order, watch notifications and service health) that exercises the same three services the curl commands below hit - useful for actually *seeing* the system run rather than reading JSON in a terminal. Every request it makes is relative to that same URL (`/api/...`), which CloudFront routes to the ALB, so if something fails, your browser's network tab will show exactly which call failed and why. often more useful for debugging than curl's plain "connection refused."
 
 ### Option B: curl, for scripting or when you want to see raw responses
 
-Get the load balancer's public address:
+Get the CloudFront URL (HTTPS, the same path production traffic takes)
 
 ```bash
-ALB=$(terraform -chdir=infra output -raw alb_dns_name)
+CF=$(terraform -chdir=infra output -raw app_url)                  # $CF/api/...
 ```
 
 **1. Health checks** (confirms the ALB, target groups, and each service are
 all wired correctly):
 
 ```bash
-curl -i http://$ALB/api/auth/health
-curl -i http://$ALB/api/orders/health
-curl -i http://$ALB/api/notifications/health
+curl -i $CF/api/auth/health
+curl -i $CF/api/orders/health
+curl -i $CF/api/notifications/health
 ```
 
 Each should return `200 ok`. A `404` here almost always means a listener rule / path mismatch; a `503` means the target group has no healthy targets yet - check the ECS service's events tab in the console.
@@ -228,15 +235,15 @@ Each should return `200 ok`. A `404` here almost always means a listener rule / 
 **2. Full request flow** (exercises the shared session cache and Service Connect in one pass):
 
 ```bash
-TOKEN=$(curl -s -X POST http://$ALB/api/auth/login \
+TOKEN=$(curl -s -X POST $CF/api/auth/login \
   -d '{"username":"Ahmed","password":"anything"}' | jq -r .token)
 
-curl -s -X POST http://$ALB/api/orders/orders \
+curl -s -X POST $CF/api/orders/orders \
   -H "Authorization: Bearer $TOKEN" -d '{"item":"keyboard","quantity":1}'
 
-curl -s http://$ALB/api/orders/orders -H "Authorization: Bearer $TOKEN"
+curl -s $CF/api/orders/orders -H "Authorization: Bearer $TOKEN"
 
-curl -s http://$ALB/api/notifications/notifications
+curl -s $CF/api/notifications/notifications
 ```
 
 If the order call succeeds but no notification shows up, that's a Service Connect problem, not an ALB problem - check the `orders` task's logs in CloudWatch for the outbound call to `notifications.internal:8080`.
@@ -258,7 +265,6 @@ aws logs tail /ecs/$(terraform -chdir=infra output -raw ecs_cluster_name | sed '
 
 ## Known Limitations
 
-- **No HTTPS** — the ALB listens on plain HTTP. A real deployment needs an ACM certificate and an HTTPS listener.
 - **`desired_count = 1` per service** - the design supports multi-AZ scaling (see Reliability above) but isn't currently exercising it, to keep the demo's AWS cost low.
 - **In-memory data only** there's no RDS/DynamoDB. The point of this project is the surrounding infrastructure, not a persistence layer.
 - **Fake authentication** Auth accepts any non-empty username/password.

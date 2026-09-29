@@ -67,16 +67,16 @@
     <h2>API Endpoint</h2>
     <div class="row">
       <div style="flex:3">
-        <label for="apiBase">Base URL (the ALB, e.g. http://your-alb-dns-name)</label>
-        <input id="apiBase" type="text" placeholder="http://your-alb-dns-name.us-east-1.elb.amazonaws.com">
+        <label for="apiBase">Base URL</label>
+        <input id="apiBase" type="text" placeholder="leave blank (API is served from this same CloudFront distribution at /api/*)">
       </div>
       <div style="flex:1; align-self:flex-end;">
         <button class="secondary" onclick="saveBase()" style="width:100%; margin-top:0;">Save</button>
       </div>
     </div>
     <div id="baseStatus" class="status-line muted">
-      This is pre-filled automatically when deployed via GitHub Actions. Edit it if you're pointing at a
-      different environment, then click Save.
+      CloudFront proxies /api/* to the ALB, so the deployed console needs no configuration. Only set this
+      to point at a different environment directly (e.g. an ALB DNS name for local debugging).
     </div>
   </div>
 
@@ -150,15 +150,17 @@
 
 <footer>
   Frontend hosted on S3 + CloudFront. Backend: ECS Fargate, ALB, Service Connect, ElastiCache, Secrets Manager.
-  See the project <a href="https://github.com/Mr-Logicc/containerized-microservices-project" target="_blank">README</a> for the full architecture.
+  See the project <a href="https://github.com" target="_blank">README</a> for the full architecture.
 </footer>
 
 <script>
   let token = null;
-  const DEFAULT_BASE = "__API_BASE_URL__"; // replaced at deploy time by GitHub Actions
 
+  // Empty string means "relative to this page's origin", correct by
+  // default, since CloudFront serves both the frontend and /api/* from the
+  // same domain. Only overridden if the user sets a different base below.
   function getBase() {
-    return localStorage.getItem("apiBase") || (DEFAULT_BASE.indexOf("__") === 0 ? "" : DEFAULT_BASE);
+    return localStorage.getItem("apiBase") || "";
   }
 
   function saveBase() {

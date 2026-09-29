@@ -39,10 +39,6 @@ jobs:
           role-to-assume: ${{ vars.ACTIONS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Inject the real API base URL
-        run: |
-          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" frontend/index.html
-
       - name: Sync to S3
         run: |
           aws s3 sync frontend/ "s3://${{ vars.FRONTEND_BUCKET_NAME }}" --delete

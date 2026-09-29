@@ -11,7 +11,7 @@ resource "aws_cloudfront_distribution" "this" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
   comment             = "${var.project_name} frontend"
-  price_class         = "PriceClass_100" # cheapest tier -- North America + Europe edge locations only
+  price_class         = "PriceClass_100" # cheapest tier - North America + Europe edge locations only
 
   # S3 Bucket (Frontend)
   origin {
@@ -22,30 +22,30 @@ resource "aws_cloudfront_distribution" "this" {
 
   # ALB (Backend APIs)
   origin {
-    
     domain_name = aws_lb.this.dns_name
     origin_id   = "backend-alb"
 
     custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"   # Forces CloudFront to use HTTP to reach the ALB
-      origin_ssl_protocols   = ["TLSv1.2"]   
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "http-only" # Forces CloudFront to use HTTP to reach the ALB
+      origin_ssl_protocols     = ["SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"] # unused with http-only, required by the schema
+      origin_read_timeout      = 30
+      origin_keepalive_timeout = 5
     }
   }
 
   # /api/* (Routes to ALB)
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
-    target_origin_id       = "backend-alb"
-    viewer_protocol_policy = "redirect-to-https"
-
-    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern            = "/api/*"
+    target_origin_id        = "backend-alb"
+    viewer_protocol_policy  = "redirect-to-https"
+    allowed_methods         = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods          = ["GET", "HEAD"]
+    compress                = true
 
     # AWS Managed: CachingDisabled
-    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-
+    cache_policy_id         = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
     # AWS Managed: AllViewer
     origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3"
   }
@@ -60,7 +60,6 @@ resource "aws_cloudfront_distribution" "this" {
     cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # AWS managed: CachingOptimized
   }
 
-  # Serves index.html for 403s so client-side routes do not 404.
   custom_error_response {
     error_code         = 403
     response_code      = 200

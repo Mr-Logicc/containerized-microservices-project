@@ -17,13 +17,13 @@ variable "vpc_cidr" {
 }
 
 variable "container_image_tag" {
-  description = "Image tag ECR repos are seeded with before the very first deploy. GitHub Actions overrides the running tag afterwards via `aws ecs update-service`, so this only matters for the first `terraform apply`, before any image has been pushed."
+  description = "Initial image tag for the ECR repositories, used only until the first CI deploy overrides it via `aws ecs update-service`."
   type        = string
   default     = "initial"
 }
 
 variable "api_key_secret_value" {
-  description = "Fake API key / DB password used only to demonstrate the Secrets Manager injection pattern. Not a real credential"
+  description = "Placeholder API key demonstrating Secrets Manager injection. Not a real credential."
   type        = string
   default     = "demo-secret-value"
   sensitive   = true
@@ -33,15 +33,18 @@ variable "github_owner" {
   description = "GitHub username"
   type        = string
 }
+
 variable "github_owner_id" {
-  description = "The immutable numeric ID of the GitHub account/organization."
+  description = "Numeric GitHub owner ID. Get it with the cli command: gh api users/<owner> --jq .id (or orgs/<owner> for an organization)."
   type        = string
 }
+
 variable "github_repo" {
-  description = "GitHub repo name."
+  description = "GitHub repository allowed to assume the CI role via OIDC"
   type        = string
 }
+
 variable "github_repo_id" {
-  description = "The immutable numeric ID of the GitHub repository."
+  description = "Numeric GitHub repository ID. Get it with the cli command: gh api repos/<owner>/<repo> --jq .id."
   type        = string
 }
